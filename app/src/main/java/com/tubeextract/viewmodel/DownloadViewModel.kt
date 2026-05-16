@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.File
 
 class DownloadViewModel(application: Application) : AndroidViewModel(application) {
@@ -40,22 +41,37 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
 
                     val response = YoutubeDL.getInstance().getInfo(request)
 
-                    val formats = buildFormats(response)
-                    val subtitles = response.subtitles?.keys?.toList() ?: emptyList()
-                    val autoSubs = response.automaticCaptions?.keys?.toList() ?: emptyList()
+                    val subtitleLanguages = mutableListOf<String>()
+                    try {
+                        response.subtitles?.keys?.let { subtitleLanguages.addAll(it) }
+                    } catch (_: Exception) {}
+                    try {
+                        response.automaticCaptions?.keys?.let { keys ->
+                            keys.forEach { if (!subtitleLanguages.contains(it)) subtitleLanguages.add(it) }
+                        }
+                    } catch (_: Exception) {}
+
+                    val formats = mutableListOf<VideoFormat>()
+                    formats.add(VideoFormat("bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best", "mp4", "Auto", null, null, false, "Meilleure qualité"))
+                    formats.add(VideoFormat("bestvideo[height<=1080]+bestaudio/best[height<=1080]", "mp4", "1080p", null, null, false, "1080p Full HD"))
+                    formats.add(VideoFormat("bestvideo[height<=720]+bestaudio/best[height<=720]", "mp4", "720p", null, null, false, "720p HD"))
+                    formats.add(VideoFormat("bestvideo[height<=480]+bestaudio/best[height<=480]", "mp4", "480p", null, null, false, "480p"))
+                    formats.add(VideoFormat("bestaudio/best", "m4a", null, null, null, true, "Audio uniquement"))
+
+                    val duration = try { response.duration?.toLong() ?: 0L } catch (_: Exception) { 0L }
 
                     val info = VideoInfo(
                         id = response.id ?: "",
                         title = response.title ?: "Vidéo sans titre",
-                        duration = response.duration?.toLong() ?: 0L,
+                        duration = duration,
                         thumbnail = response.thumbnail,
-                        channel = response.uploader,
+                        channel = try { response.uploader } catch (_: Exception) { null },
                         formats = formats,
-                        subtitleLanguages = (subtitles + autoSubs).distinct()
+                        subtitleLanguages = subtitleLanguages
                     )
                     _downloadState.value = DownloadState.InfoReady(info)
                 } catch (e: Exception) {
-                    _downloadState.value = DownloadState.Error("Impossible de récupérer les infos: ${e.message}")
+                    _downloadState.value = DownloadState.Error("Impossible de récupérer les infos:\n${e.message}")
                 }
             }
         }
@@ -67,14 +83,12 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
                 try {
                     _downloadState.value = DownloadState.Downloading(0f, "Préparation...")
 
-                    val dlRequest = YoutubeDLRequest(request.url)
-                    dlRequest.addOption("--no-playlist")
-
                     val tempDir = File(outputDir, "temp_${System.currentTimeMillis()}")
                     tempDir.mkdirs()
 
-                    val outputTemplate = "${tempDir.absolutePath}/%(title)s.%(ext)s"
-                    dlRequest.addOption("-o", outputTemplate)
+                    val dlRequest = YoutubeDLRequest(request.url)
+                    dlRequest.addOption("--no-playlist")
+                    dlRequest.addOption("-o", "${tempDir.absolutePath}/%(title)s.%(ext)s")
 
                     when (request.outputType) {
                         OutputType.AUDIO, OutputType.AUDIO_SUBS -> {
@@ -88,19 +102,16 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
                         }
                     }
 
-                    if (request.outputType == OutputType.AUDIO_SUBS || request.outputType == OutputType.VIDEO_SUBS) {
-                        request.subtitleLanguage?.let { lang ->
-                            dlRequest.addOption("--write-subs")
-                            dlRequest.addOption("--write-auto-subs")
-                            dlRequest.addOption("--sub-langs", lang)
-                            dlRequest.addOption("--sub-format", "srt/vtt/best")
-                            if (request.outputType == OutputType.VIDEO_SUBS && request.burnSubtitles) {
-                                dlRequest.addOption("--embed-subs")
-                            }
+                    if (request.subtitleLanguage != null &&
+                        (request.outputType == OutputType.VIDEO_SUBS || request.outputType == OutputType.AUDIO_SUBS)) {
+                        dlRequest.addOption("--write-subs")
+                        dlRequest.addOption("--write-auto-subs")
+                        dlRequest.addOption("--sub-langs", request.subtitleLanguage)
+                        dlRequest.addOption("--sub-format", "srt/vtt/best")
+                        if (request.outputType == OutputType.VIDEO_SUBS && request.burnSubtitles) {
+                            dlRequest.addOption("--embed-subs")
                         }
                     }
-
-                    var downloadedFile: File? = null
 
                     YoutubeDL.getInstance().execute(dlRequest) { progress, _, line ->
                         _downloadState.value = DownloadState.Downloading(
@@ -109,25 +120,19 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
                         )
                     }
 
-                    downloadedFile = tempDir.listFiles()?.firstOrNull { file ->
-                        file.isFile && !file.name.endsWith(".srt") && !file.name.endsWith(".vtt")
-                    }
+                    val downloadedFile = tempDir.listFiles()
+                        ?.filter { it.isFile && !it.name.endsWith(".srt") && !it.name.endsWith(".vtt") && !it.name.endsWith(".part") }
+                        ?.maxByOrNull { it.length() }
 
                     if (downloadedFile == null) {
-                        _downloadState.value = DownloadState.Error("Fichier téléchargé introuvable")
+                        _downloadState.value = DownloadState.Error("Fichier introuvable après téléchargement")
                         tempDir.deleteRecursively()
                         return@withContext
                     }
 
                     val finalFile = if (request.startTime != null && request.endTime != null) {
                         _downloadState.value = DownloadState.Processing("Découpage du segment...")
-                        cutSegment(
-                            input = downloadedFile,
-                            startTime = request.startTime,
-                            endTime = request.endTime,
-                            outputType = request.outputType,
-                            audioFormat = request.audioFormat
-                        )
+                        cutSegment(downloadedFile, request.startTime, request.endTime, request.outputType, request.audioFormat)
                     } else {
                         val dest = File(outputDir, downloadedFile.name)
                         downloadedFile.copyTo(dest, overwrite = true)
@@ -135,13 +140,14 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
                     }
 
                     if (request.outputType == OutputType.AUDIO_SUBS) {
-                        val srtFile = tempDir.listFiles()?.firstOrNull { it.name.endsWith(".srt") || it.name.endsWith(".vtt") }
-                        srtFile?.copyTo(File(outputDir, srtFile.name), overwrite = true)
+                        tempDir.listFiles()
+                            ?.firstOrNull { f -> f.name.endsWith(".srt") || f.name.endsWith(".vtt") }
+                            ?.let { srt -> srt.copyTo(File(outputDir, srt.name), overwrite = true) }
                     }
 
                     tempDir.deleteRecursively()
 
-                    val downloaded = DownloadedFile(
+                    val result = DownloadedFile(
                         title = finalFile.nameWithoutExtension,
                         filePath = finalFile.absolutePath,
                         outputType = request.outputType,
@@ -151,9 +157,8 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
                         startTime = request.startTime,
                         endTime = request.endTime
                     )
-
-                    _downloadedFiles.value = _downloadedFiles.value + downloaded
-                    _downloadState.value = DownloadState.Success(downloaded)
+                    _downloadedFiles.value = _downloadedFiles.value + result
+                    _downloadState.value = DownloadState.Success(result)
 
                 } catch (e: Exception) {
                     _downloadState.value = DownloadState.Error("Erreur: ${e.message}")
@@ -173,59 +178,17 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
             OutputType.AUDIO, OutputType.AUDIO_SUBS -> audioFormat.ext
             else -> "mp4"
         }
-        val name = "${input.nameWithoutExtension}_${formatTime(startTime)}-${formatTime(endTime)}.$ext"
+        val name = "${input.nameWithoutExtension}_${startTime}s-${endTime}s.$ext"
         val output = File(outputDir, name)
 
-        val ffmpegArgs = mutableListOf(
-            "-i", input.absolutePath,
-            "-ss", startTime.toString(),
-            "-to", endTime.toString()
-        )
-
-        if (outputType == OutputType.AUDIO || outputType == OutputType.AUDIO_SUBS) {
-            ffmpegArgs.addAll(listOf("-vn", "-acodec", "copy"))
+        val args = if (outputType == OutputType.AUDIO || outputType == OutputType.AUDIO_SUBS) {
+            arrayOf("-y", "-i", input.absolutePath, "-ss", startTime.toString(), "-to", endTime.toString(), "-vn", "-acodec", "copy", output.absolutePath)
         } else {
-            ffmpegArgs.addAll(listOf("-c", "copy"))
+            arrayOf("-y", "-i", input.absolutePath, "-ss", startTime.toString(), "-to", endTime.toString(), "-c", "copy", output.absolutePath)
         }
 
-        ffmpegArgs.addAll(listOf("-avoid_negative_ts", "make_zero", output.absolutePath))
-
-        FFmpeg.getInstance().execute(ffmpegArgs.toTypedArray(), null)
+        FFmpeg.getInstance().execute(args, null)
         return output
-    }
-
-    private fun formatTime(seconds: Long): String {
-        val h = seconds / 3600
-        val m = (seconds % 3600) / 60
-        val s = seconds % 60
-        return if (h > 0) "%02d%02d%02d".format(h, m, s) else "%02d%02d".format(m, s)
-    }
-
-    private fun buildFormats(response: com.yausername.youtubedl_android.mapper.VideoInfo): List<VideoFormat> {
-        val formats = mutableListOf<VideoFormat>()
-
-        formats.add(VideoFormat("bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best", "mp4", "Meilleure qualité", null, null, false, "Meilleure qualité (MP4)"))
-        formats.add(VideoFormat("bestvideo[height<=1080]+bestaudio/best[height<=1080]", "mp4", "1080p", null, null, false, "1080p Full HD"))
-        formats.add(VideoFormat("bestvideo[height<=720]+bestaudio/best[height<=720]", "mp4", "720p", null, null, false, "720p HD"))
-        formats.add(VideoFormat("bestvideo[height<=480]+bestaudio/best[height<=480]", "mp4", "480p", null, null, false, "480p"))
-        formats.add(VideoFormat("bestaudio/best", "m4a", null, null, null, true, "Audio uniquement"))
-
-        response.formats?.forEach { f ->
-            if (f.vcodec != null && f.vcodec != "none" && f.acodec != null && f.acodec != "none") {
-                val res = f.resolution ?: "${f.width}x${f.height}"
-                formats.add(VideoFormat(
-                    formatId = f.formatId ?: "",
-                    ext = f.ext ?: "mp4",
-                    resolution = res,
-                    fps = f.fps?.toInt(),
-                    filesize = f.filesize,
-                    isAudioOnly = false,
-                    label = "$res ${f.ext?.uppercase() ?: ""}"
-                ))
-            }
-        }
-
-        return formats
     }
 
     fun resetState() {
