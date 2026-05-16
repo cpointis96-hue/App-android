@@ -16,8 +16,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tubeextract.data.model.DownloadedFile
 import com.tubeextract.data.model.DownloadState
+import com.tubeextract.ui.components.formatSeconds
 import com.tubeextract.ui.theme.RedYT
-import java.io.File
 
 @Composable
 fun ProgressScreen(
@@ -55,14 +55,6 @@ fun ProgressScreen(
 
 @Composable
 private fun LoadingState(title: String, subtitle: String) {
-    val infiniteTransition = rememberInfiniteTransition(label = "loading")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing)),
-        label = "spin"
-    )
-
     CircularProgressIndicator(
         modifier = Modifier.size(80.dp),
         color = RedYT,
@@ -71,7 +63,12 @@ private fun LoadingState(title: String, subtitle: String) {
     Spacer(Modifier.height(24.dp))
     Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
     Spacer(Modifier.height(8.dp))
-    Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    Text(
+        subtitle,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center
+    )
 }
 
 @Composable
@@ -141,8 +138,7 @@ private fun SuccessState(file: DownloadedFile, onNewDownload: () -> Unit, onView
             onClick = onViewLibrary,
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedButtonDefaults.outlinedButtonColors(contentColor = RedYT),
-            border = ButtonDefaults.outlinedButtonBorder.copy()
+            colors = OutlinedButtonDefaults.outlinedButtonColors(contentColor = RedYT)
         ) {
             Icon(Icons.Filled.Folder, null)
             Spacer(Modifier.width(6.dp))
@@ -175,7 +171,12 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
     Spacer(Modifier.height(24.dp))
     Text("Une erreur s'est produite", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
     Spacer(Modifier.height(8.dp))
-    Text(message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    Text(
+        message,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center
+    )
     Spacer(Modifier.height(32.dp))
     Button(
         onClick = onRetry,
