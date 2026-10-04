@@ -138,7 +138,7 @@ private fun SuccessState(file: DownloadedFile, onNewDownload: () -> Unit, onView
             onClick = onViewLibrary,
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedButtonDefaults.outlinedButtonColors(contentColor = RedYT)
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = RedYT)
         ) {
             Icon(Icons.Filled.Folder, null)
             Spacer(Modifier.width(6.dp))
