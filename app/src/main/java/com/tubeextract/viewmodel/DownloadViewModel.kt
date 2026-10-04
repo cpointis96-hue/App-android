@@ -39,14 +39,20 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
                     request.addOption("--dump-json")
                     request.addOption("--no-playlist")
 
-                    val response = YoutubeDL.getInstance().getInfo(request)
+                    val app = getApplication<Application>()
+                    YoutubeDL.getInstance().init(app)
+                    FFmpeg.getInstance().init(app)
+                    val rawInfo = YoutubeDL.getInstance().execute(request).out
+                    val metadata = JSONObject(rawInfo)
 
                     val subtitleLanguages = mutableListOf<String>()
                     try {
-                        response.subtitles?.keys?.let { subtitleLanguages.addAll(it) }
+                        metadata.optJSONObject("subtitles")?.keys()?.let { keys ->
+                            keys.forEach { subtitleLanguages.add(it) }
+                        }
                     } catch (_: Exception) {}
                     try {
-                        response.automaticCaptions?.keys?.let { keys ->
+                        metadata.optJSONObject("automatic_captions")?.keys()?.let { keys ->
                             keys.forEach { if (!subtitleLanguages.contains(it)) subtitleLanguages.add(it) }
                         }
                     } catch (_: Exception) {}
@@ -58,14 +64,14 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
                     formats.add(VideoFormat("bestvideo[height<=480]+bestaudio/best[height<=480]", "mp4", "480p", null, null, false, "480p"))
                     formats.add(VideoFormat("bestaudio/best", "m4a", null, null, null, true, "Audio uniquement"))
 
-                    val duration = try { response.duration?.toLong() ?: 0L } catch (_: Exception) { 0L }
+                    val duration = metadata.optLong("duration", 0L)
 
                     val info = VideoInfo(
-                        id = response.id ?: "",
-                        title = response.title ?: "Vidéo sans titre",
+                        id = metadata.optString("id", ""),
+                        title = metadata.optString("title", "Vidéo sans titre"),
                         duration = duration,
-                        thumbnail = response.thumbnail,
-                        channel = try { response.uploader } catch (_: Exception) { null },
+                        thumbnail = if (metadata.isNull("thumbnail")) null else metadata.optString("thumbnail"),
+                        channel = if (metadata.isNull("uploader")) null else metadata.optString("uploader"),
                         formats = formats,
                         subtitleLanguages = subtitleLanguages
                     )
@@ -82,6 +88,9 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
             withContext(Dispatchers.IO) {
                 try {
                     _downloadState.value = DownloadState.Downloading(0f, "Préparation...")
+                    val app = getApplication<Application>()
+                    YoutubeDL.getInstance().init(app)
+                    FFmpeg.getInstance().init(app)
 
                     val tempDir = File(outputDir, "temp_${System.currentTimeMillis()}")
                     tempDir.mkdirs()
@@ -187,8 +196,14 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
             arrayOf("-y", "-i", input.absolutePath, "-ss", startTime.toString(), "-to", endTime.toString(), "-c", "copy", output.absolutePath)
         }
 
-        FFmpeg.getInstance().execute(args, null)
-        return output
+        val app = getApplication<Application>()
+        val packages = File(app.noBackupFilesDir, "youtubedl-android/packages")
+        val libraryPath = listOf("python", "ffmpeg", "aria2c")
+            .joinToString(":") { File(packages, "$it/usr/lib").absolutePath }
+        return runSegmentProcess(
+            File(app.applicationInfo.nativeLibraryDir, "libffmpeg.so"),
+            libraryPath, args.toList(), output
+        )
     }
 
     fun resetState() {
