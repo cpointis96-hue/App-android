@@ -18,7 +18,7 @@ sh ./gradlew assembleDebug test lint --no-daemon -Pandroid.builder.sdkDownload=f
 
 Le build debug a réussi pendant cette préparation, avec deux tests JVM synthétiques réussis. L'APK se trouve dans `app/build/outputs/apk/debug/app-debug.apk`. Son installation sur un appareil de test peut se faire avec `adb install -r` suivi de ce chemin. La signature debug, l'installation et l'ouverture sur un émulateur Android 15 ARM64 vide ont été vérifiées. Le passage à la bibliothèque affiche bien zéro fichier. Le téléchargement, les formats, les sous-titres et le découpage réels restent à vérifier ; ce n'est pas une release fonctionnellement complète.
 
-Le workflow GitHub construit l'APK debug et exécute les tests JVM avec `assembleDebug testDebugUnitTest`. Après une exécution réussie, l'APK est disponible pendant 30 jours dans l'artefact `TubeExtract-debug` de cette exécution GitHub Actions ; son téléchargement nécessite un accès à GitHub. Consulter le résultat Actions avant de télécharger : la correction du workflow n'a pas encore été testée à distance.
+Le workflow GitHub construit l'APK debug et exécute les tests JVM avec `assembleDebug testDebugUnitTest`. [L'exécution du 4 octobre 2026](https://github.com/cpointis96-hue/App-android/actions/runs/37191448567) a réussi, y compris le build, les tests JVM et le dépôt de l'artefact `TubeExtract-debug`. Cet artefact est conservé 30 jours et son téléchargement nécessite un accès à GitHub. Consulter le résultat Actions avant de télécharger ; ce succès CI ne valide pas le téléchargement ni le traitement de médias réels sur Android.
 
 ## Limites observées dans le code
 
