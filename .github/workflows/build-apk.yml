@@ -9,7 +9,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -29,26 +29,19 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
-
-      - name: Copie APK dans le repo (téléchargeable sur mobile)
-        run: |
-          mkdir -p apk
-          cp app/build/outputs/apk/debug/app-debug.apk apk/TubeExtract.apk
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-          git add apk/TubeExtract.apk
-          git diff --staged --quiet || git commit -m "APK mis à jour automatiquement"
-          git push
+        run: ./gradlew assembleDebug testDebugUnitTest --no-daemon --stacktrace
 
       - name: Upload Artifact (sauvegarde)
         uses: actions/upload-artifact@v4
         with:
           name: TubeExtract-debug
-          path: apk/TubeExtract.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
           retention-days: 30

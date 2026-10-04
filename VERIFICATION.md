@@ -44,3 +44,11 @@ Un AVD neuf `portfolio_tubeextract` a été créé dans le workspace avec l'imag
 `adb -s emulator-5570 install` : Success. `am start -W -n com.tubeextract/.MainActivity` : Status ok, lancement à froid en 1237 ms. UIAutomator retrouve l'accueil, le champ URL vide et le bouton d'analyse désactivé. Après sélection de Bibliothèque, il retrouve « Ma bibliothèque », « 0 fichier » et « Aucun fichier téléchargé ». Deux captures Android sont conservées dans `docs/screenshots`. `logcat -d -s AndroidRuntime:E` ne retourne aucune erreur sur cette session vide.
 
 Ce contrôle manuel vérifie installation, ouverture et navigation accueil/bibliothèque seulement. URL partagée, formats, sous-titres, segment, progression, traitement FFmpeg Android, suppression et reprise restent non testés. Les deux tests JVM du runner ne constituent pas une suite UI Android. Lint non exécuté dans cette reprise. Deux avertissements de compilation restent : icône ArrowBack dépréciée et Elvis redondant du callback.
+
+## Workflow GitHub Actions
+
+L'exécution [37190179172](https://github.com/cpointis96-hue/App-android/actions/runs/37190179172) a échoué dans `Setup Android SDK`, avant la compilation : l'action demandait par défaut `tools platform-tools` et le SDK courant répondait `Failed to find package tools`. Ce résultat rouge ne concerne donc ni `assembleDebug` ni les tests JVM.
+
+Le workflow demande maintenant explicitement `platform-tools`, `platforms;android-34` et `build-tools;34.0.0`, avec acceptation des licences Android inchangée et journalisation des contrats acceptés désactivée. Il exécute `assembleDebug testDebugUnitTest` et publie directement `app/build/outputs/apk/debug/app-debug.apk` comme artefact `TubeExtract-debug` conservé 30 jours. L'APK n'est plus committé ni poussé par la CI ; la permission du jeton est limitée à `contents: read`.
+
+Cette correction a été contrôlée localement sur le YAML et le diff. Elle n'a pas encore été exécutée sur GitHub Actions : aucun succès distant n'est revendiqué. Le build et les deux tests JVM locaux mentionnés plus haut précèdent cette correction du workflow ; aucun build Gradle supplémentaire n'a été lancé pour cette modification seule.
