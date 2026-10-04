@@ -1,6 +1,6 @@
 # TubeExtract
 
-Prototype Android pour récupérer une vidéo depuis une URL, choisir une sortie vidéo ou audio, des sous-titres et éventuellement un segment temporel. Ce dépôt s'appelle historiquement `App-android` ; il contient TubeExtract, un projet distinct de VérifScoot. Le dépôt existant reste privé.
+Prototype Android pour récupérer une vidéo depuis une URL, choisir une sortie vidéo ou audio, des sous-titres et éventuellement un segment temporel. Ce dépôt s'appelle historiquement `App-android` ; il contient TubeExtract, un projet distinct de VérifScoot.
 
 ## Ce que contient le projet
 
@@ -10,7 +10,7 @@ Stack : Kotlin 1.9.24, Compose Material 3, coroutines / StateFlow, Coil, Android
 
 ## Installation et téléchargement
 
-Avec un accès au dépôt privé, cloner ou télécharger les sources depuis GitHub. Installer JDK 17 et Android SDK API 34 avec les outils de compilation 34.0.0, puis définir `ANDROID_HOME` ou `sdk.dir` dans un `local.properties` non versionné.
+Cloner ou télécharger les sources depuis GitHub. Installer JDK 17 et Android SDK API 34 avec les outils de compilation 34.0.0, puis définir `ANDROID_HOME` ou `sdk.dir` dans un `local.properties` non versionné.
 
 ```sh
 sh ./gradlew assembleDebug test lint --no-daemon -Pandroid.builder.sdkDownload=false
@@ -42,3 +42,7 @@ Utiliser uniquement des médias auxquels vous avez accès et dont le télécharg
 ## Notices des fournisseurs
 
 Les deux POM 0.17.4 ci-dessus déclarent GPL-3.0 pour les artefacts youtubedl-android. FFmpeg décrit sa licence de base LGPL 2.1 ou ultérieure et les composants optionnels sous GPL dans sa [notice officielle](https://ffmpeg.org/legal.html). Ces mentions concernent les fournisseurs ; elles ne définissent pas une licence pour ce projet. La configuration exacte des binaires FFmpeg embarqués n'a pas été auditée ici.
+
+## Dépôt et téléchargement
+
+[Voir le dépôt](https://github.com/cpointis96-hue/App-android) · [Télécharger les sources ZIP](https://github.com/cpointis96-hue/App-android/archive/HEAD.zip). Le ZIP contient les sources ; l’APK debug se construit selon les instructions ci-dessus.
