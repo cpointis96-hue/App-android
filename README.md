@@ -1,6 +1,16 @@
 # TubeExtract
 
-Prototype Android pour récupérer une vidéo depuis une URL, choisir une sortie vidéo ou audio, des sous-titres et éventuellement un segment temporel. Ce dépôt s'appelle historiquement `App-android` ; il contient TubeExtract, un projet distinct de VérifScoot.
+## En bref
+
+**Ce que c’est :** une application Android pour préparer la récupération d’un média depuis une URL.
+
+**À quoi elle sert :** choisir une sortie vidéo ou audio, récupérer des sous-titres, sélectionner un segment temporel et retrouver les fichiers dans une bibliothèque locale.
+
+**Ce qui a été réalisé :** interface d’accueil, choix du téléchargement, progression et bibliothèque. Le build, deux tests JVM, l’installation et l’ouverture sur émulateur ont été vérifiés.
+
+**Technologies :** Kotlin, Jetpack Compose, coroutines/StateFlow, Coil, yt-dlp Android, FFmpeg, Gradle et Android SDK.
+
+Le téléchargement réel, les sous-titres, le découpage et le traitement de médias sur Android restent à valider. Le dépôt s’appelle historiquement `App-android`.
 
 ## Ce que contient le projet
 
