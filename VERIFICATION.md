@@ -19,4 +19,6 @@ Un essai avec résolution réseau et `-Dcom.android.builder.sdkDownload=false` a
 
 Aucun APK nouveau, test Android, lint réussi ou capture n'est revendiqué. Aucun média téléchargé, aucune donnée personnelle consultée, aucune licence nouvellement acceptée. Le Mac verrouillé exclut les captures natives.
 
+Après instruction du parent, dernier essai strictement hors ligne : `sh ./gradlew --offline -Pandroid.builder.sdkDownload=false :app:assembleDebug :app:testDebugUnitTest --no-daemon`, mêmes variables ci-dessus. Le bac à sable bloque d'abord la socket locale du daemon (`SocketException: Operation not permitted`) ; relance autorisée hors bac à sable, toujours `--offline`. Résultat : `:app:checkDebugAarMetadata FAILED`, `BUILD FAILED in 3s`, dépendances runtime absentes du cache (notamment Kotlin stdlib 1.9.24, Compose BOM 2024.06.00, bibliothèques AndroidX, Coil 2.7.0 et versions yt-dlp/FFmpeg 0.17.+). Aucun téléchargement réseau pendant cet essai final ; arrêt de la vérification.
+
 Pour reprendre : fournir Gradle 8.7 et les dépendances résolues, JDK 17, plateforme SDK 34 et environnement de test disponible ; lancer `assembleDebug test lint`, puis vérifier sur un émulateur vide l'accueil, URL partagée, formats, sous-titres, segment, progression, fichiers, suppression et redémarrage. Le code ne contient pas de suite de tests Android dédiée.
