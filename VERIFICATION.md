@@ -37,4 +37,10 @@ Un essai intermédiaire a échoué sur ObjectMapper inaccessible depuis le compi
 
 APK produit : `app/build/outputs/apk/debug/app-debug.apk`, environ 132 Mio. SHA-256 : `c82d8f50c84c9e5653c0f89b8f2433a9a114fea2d7e892403143adbf5f196e8e`. `apksigner verify` réussit ; `aapt dump badging` confirme com.tubeextract 1.0, minSDK26/target34 et MainActivity démarrable, ABI arm64-v8a/armeabi-v7a/x86/x86_64. Ces contrôles statiques ne prouvent pas l'ouverture sur Android. Aucun téléchargement SDK ni licence nouvelle pendant ces builds corrigés ; seul le téléchargement de dépendances a eu lieu.
 
-Pour le parcours réel : vérifier sur un émulateur vide l'accueil, URL partagée, formats, sous-titres, segment, progression, fichiers, suppression et redémarrage. Aucune capture ni exécution sur appareil dans cette tâche. Les deux tests JVM du runner ne constituent pas une suite UI Android. Lint non exécuté dans cette reprise. Deux avertissements de compilation restent : icône ArrowBack dépréciée et Elvis redondant du callback.
+## Reprise sur émulateur, Mac déverrouillé
+
+Un AVD neuf `portfolio_tubeextract` a été créé dans le workspace avec l'image ARM64 Android 35 Google APIs déjà installée pour Vérif Scoot. Aucun ancien AVD ni téléphone personnel n'a été utilisé ; aucun SDK téléchargé ni licence acceptée pour cette reprise.
+
+`adb -s emulator-5570 install` : Success. `am start -W -n com.tubeextract/.MainActivity` : Status ok, lancement à froid en 1237 ms. UIAutomator retrouve l'accueil, le champ URL vide et le bouton d'analyse désactivé. Après sélection de Bibliothèque, il retrouve « Ma bibliothèque », « 0 fichier » et « Aucun fichier téléchargé ». Deux captures Android sont conservées dans `docs/screenshots`. `logcat -d -s AndroidRuntime:E` ne retourne aucune erreur sur cette session vide.
+
+Ce contrôle manuel vérifie installation, ouverture et navigation accueil/bibliothèque seulement. URL partagée, formats, sous-titres, segment, progression, traitement FFmpeg Android, suppression et reprise restent non testés. Les deux tests JVM du runner ne constituent pas une suite UI Android. Lint non exécuté dans cette reprise. Deux avertissements de compilation restent : icône ArrowBack dépréciée et Elvis redondant du callback.

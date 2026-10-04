@@ -16,7 +16,7 @@ Avec un accès au dépôt privé, cloner ou télécharger les sources depuis Git
 sh ./gradlew assembleDebug test lint --no-daemon -Pandroid.builder.sdkDownload=false
 ```
 
-Le build debug a réussi pendant cette préparation, avec deux tests JVM synthétiques réussis. L'APK se trouve dans `app/build/outputs/apk/debug/app-debug.apk`. Son installation sur un appareil de test peut se faire avec `adb install -r` suivi de ce chemin. La signature debug a été vérifiée ; ouverture, parcours Android et traitement de médias réels restent à vérifier. Ce résultat n'est pas une release validée sur appareil.
+Le build debug a réussi pendant cette préparation, avec deux tests JVM synthétiques réussis. L'APK se trouve dans `app/build/outputs/apk/debug/app-debug.apk`. Son installation sur un appareil de test peut se faire avec `adb install -r` suivi de ce chemin. La signature debug, l'installation et l'ouverture sur un émulateur Android 15 ARM64 vide ont été vérifiées. Le passage à la bibliothèque affiche bien zéro fichier. Le téléchargement, les formats, les sous-titres et le découpage réels restent à vérifier ; ce n'est pas une release fonctionnellement complète.
 
 Le workflow GitHub existant construit un APK debug, le copie vers `apk/TubeExtract.apk`, le committe et publie un artefact conservé 30 jours. Sa présence dans le workflow ne prouve pas qu'un build disponible a été exécuté ou testé ; consulter le résultat Actions correspondant avant de télécharger un APK.
 
@@ -29,7 +29,15 @@ Le workflow GitHub existant construit un APK debug, le copie vers `apk/TubeExtra
 - L'option nommée `burnSubtitles` utilise `--embed-subs`, ce qui demande l'intégration des sous-titres plutôt qu'une incrustation visuelle garantie. Le découpage copie les flux et sa précision n'est pas validée.
 - Une copie peut remplacer un fichier portant le même nom. Aucune persistance d'historique, politique de collision ou récupération après interruption n'est validée.
 
-Utiliser uniquement des médias auxquels vous avez accès et dont le téléchargement est autorisé. Aucun média ni historique personnel n'a été téléchargé pour cette préparation. Voir [VERIFICATION.md](VERIFICATION.md) pour les blocages exacts. Les captures réelles et le test sur appareil restent à réaliser.
+Utiliser uniquement des médias auxquels vous avez accès et dont le téléchargement est autorisé. Aucun média ni historique personnel n'a été téléchargé pour cette préparation. Voir [VERIFICATION.md](VERIFICATION.md) pour les résultats et limites exacts. Aucun téléphone personnel n'a été utilisé.
+
+## Captures réelles
+
+Émulateur de test vide Android 15, APK debug compilé ici ; interface originale conservée. Les fonctions annoncées dans l'accueil ne sont pas toutes validées par ces captures.
+
+![Accueil réel](docs/screenshots/accueil-emulateur.png)
+
+![Bibliothèque vide réelle](docs/screenshots/bibliotheque-vide-emulateur.png)
 
 ## Notices des fournisseurs
 
